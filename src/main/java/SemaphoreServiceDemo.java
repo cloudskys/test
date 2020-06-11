@@ -86,5 +86,68 @@ public class SemaphoreServiceDemo {
             semaphore.release();
         }
     }
-
+    private void foreachList(List<Map<String, Integer>> memberRecommends, List<Integer> bUserIds, List<Map<String, Object>> valuesList) {
+        for (Map<String, Integer> map : memberRecommends) {
+            Integer superiorId = map.get("superiorId");
+            Integer userId = map.get("userId");
+            if (userId == 68370) {
+                recordNonFlowMasterInfo(superiorId, userId, "N", "userId 是 68370");
+                continue; // 过滤历忠梅
+            }
+            // 如果当前被推荐人是商家(小B)， 则自己是自己的流量主
+            if (bUserIds.contains(userId)) {
+                // insertFlowMaster(userId, userId, valuesList, false);
+                continue;
+            }
+            if (superiorId == 68370) { // 推荐人是历忠梅 过滤
+                recordNonFlowMasterInfo(superiorId, userId, "N", "推荐人 是 68370");
+                continue; // 过滤历忠梅
+            }
+            // 如果这个推荐人是流量主， 直接插入数据
+            if (bUserIds.contains(superiorId)) {
+                recordNonFlowMasterInfo(superiorId, userId, "Y", "推荐人是流量主");
+                insertFlowMaster(superiorId, userId, valuesList, false);
+                continue;
+            }
+            // 如果存有当前推荐人的流量主直接保存
+            if (concurrentHashMap.containsKey(superiorId)) {
+                if (concurrentHashMap.get(superiorId) != null) {
+                    recordNonFlowMasterInfo(superiorId, userId, "Y", "当前推荐人的流量主 " + superiorId);
+                    insertFlowMaster(concurrentHashMap.get(superiorId), userId, valuesList, false);
+                }
+                continue;
+            }
+            // 否则递归找到这个推荐人是小B的推荐人
+            Integer referrer = findMinBrokerReferrer(superiorId, bUserIds, concurrentHashMap, 0);
+            // 如果为Null 表示没有B端的推荐人， 直接返回
+            if (referrer == null || referrer == 68370) {
+                recordNonFlowMasterInfo(superiorId, userId, "N", "当前推荐人的流量主是68370或者没有找到 " );
+                continue;
+            }
+            recordNonFlowMasterInfo(superiorId, userId, "Y", "当前推荐人的流量主(递归)是 " + superiorId);
+            insertFlowMaster(referrer, userId, valuesList, false);
+        }
+    }
+    private void insertFlowMaster(Integer superiorId, Integer userId, List<Map<String, Object>> valuesList, boolean insertFlag) {
+        if (insertFlag && valuesList.size() != 0) {
+            flowMasterDAO.insertFlowMasters(valuesList);
+            return;
+        }
+        if (superiorId == null || userId == null) {
+            return;
+        }
+        List<Integer> flowMasters = flowMasterDAO.selectFlowByMaster(superiorId);
+        // 当前流量主包含这个流量
+        if (flowMasters != null && flowMasters.contains(userId)) {
+            return;
+        }
+        Map<String, Object> map = new HashMap<>();
+        map.put("flowMasterId", superiorId);
+        map.put("flowId", userId);
+        map.put("state", 1);
+        map.put("createDate", new Date(1589904000000L));
+        map.put("updateDate", new Date(1589904000000L));
+        log.info("insert data" + map.toString());
+        valuesList.add(map);
+    }
 }
