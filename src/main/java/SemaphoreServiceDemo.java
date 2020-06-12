@@ -14,6 +14,7 @@ public class SemaphoreServiceDemo {
     private static Map<Integer, Integer> concurrentHashMap = new ConcurrentHashMap<>();
 
     private static AtomicLong totalDeal = new AtomicLong(0);
+    private UserFlowMasterDAO flowMasterDAO;
     public void initFlowMaster() throws InterruptedException {
         // 获取所有的B端用户， 有店铺 或者 R店
         List<Map<String, Integer>> bUser = flowMasterDAO.getAllBrokerUser();
@@ -75,11 +76,11 @@ public class SemaphoreServiceDemo {
             List<Map<String, Integer>> memberRecommends = flowMasterDAO.getMemberRecommends((pageNo-1) * pageSize, pageSize);
             // 如果没有结果集直接返回
             if (memberRecommends == null || memberRecommends.size() == 0) {
-                log.info("pageNo = " + pageNo + " pageSize = 0");
+               // log.info("pageNo = " + pageNo + " pageSize = 0");
                 return;
             }
-            log.info("pageNo = " + pageNo + " pageSize = " + memberRecommends.size());
-            log.info("total deal with = " + totalDeal.addAndGet(memberRecommends.size()));
+            //log.info("pageNo = " + pageNo + " pageSize = " + memberRecommends.size());
+           // log.info("total deal with = " + totalDeal.addAndGet(memberRecommends.size()));
             List<Map<String, Object>> valuesList = new ArrayList<>();
             foreachList(memberRecommends, bUserIds, valuesList);
             insertFlowMaster(null, null, valuesList, true);
@@ -147,7 +148,23 @@ public class SemaphoreServiceDemo {
         map.put("state", 1);
         map.put("createDate", new Date(1589904000000L));
         map.put("updateDate", new Date(1589904000000L));
-        log.info("insert data" + map.toString());
+       // log.info("insert data" + map.toString());
         valuesList.add(map);
     }
+
+    private void recordNonFlowMasterInfo(Integer superiorId, Integer userId, String testField, String testField2) {
+        //log.info("superiorId = " + superiorId + ", userId = " + userId + ", testField = " + testField + ", testField2 = " + testField2);
+        // flowMasterDAO.updateMemberRecommend(superiorId, userId, testField, testField2);
+    }
+    public Integer findMinBrokerReferrer(Integer superiorId, List<Integer> bUserIds, Map<Integer, Integer> recommendIdMap, int i) {
+        //log.info("findMinBrokerReferrer depth begin and search userId = " + superiorId);
+        //Integer resultUser = findMinBrokerReferrer2(superiorId, bUserIds, recommendIdMap, i);
+        //log.info("findMinBrokerReferrer depth end and search userId = " + superiorId + " resultUser: " + resultUser);
+        Integer resultUser=null;
+        if (resultUser != null && resultUser == 68370) { // 过滤历忠梅
+            return null;
+        }
+        return resultUser;
+    }
+
 }

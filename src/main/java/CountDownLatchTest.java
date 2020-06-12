@@ -10,6 +10,7 @@
  */
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -25,7 +26,25 @@ import java.util.concurrent.Executors;
  * @since 1.0.0
  */
 public class CountDownLatchTest {
-    public void initFlowMaster(String threadCount) throws InterruptedException {
+    public void initFlowMaster(String threadCount,String appId,String appSecret,String imageRootPath,String queryCount) throws InterruptedException {
+        // 查询需要同步的数据
+        //List<Map<String, Object>> l = neteaseUserBindService.findUserInfoExceptUserBind(appId);
+        List<Map<String, Object>> l = null;
+        if (l == null || l.size() <= 0) {
+           // logger.info("数据已经最新");
+            return;
+        }
+        int intQueryCount = 0;
+        if(queryCount != null && queryCount.length() > 0) {
+            intQueryCount = Integer.valueOf(queryCount);
+        }
+        List<Map<String, Object>> notExistsList;
+        if(intQueryCount > 0) {
+            notExistsList = l.subList(0, intQueryCount);
+        } else {
+            notExistsList = l;
+        }
+
         ConcurrentLinkedQueue<Map<String, Object>> datas = new ConcurrentLinkedQueue<Map<String, Object>>();
         datas.addAll(notExistsList);
         // 多线程处理
@@ -48,7 +67,7 @@ public class CountDownLatchTest {
         try {
             count.await();
         } catch (InterruptedException e) {
-            logger.error("线程计数器异常", e);
+            //logger.error("线程计数器异常", e);
         }
         long endTime = System.currentTimeMillis();
 
@@ -114,14 +133,14 @@ public class CountDownLatchTest {
             this.appSecret = appSecret;
             this.imageRootPath = imageRootPath;
         }
-
+        @Override
         public void run() {
             try {
                 execute();
             } finally {
                 this.count.countDown();
             }
-            logger.info(String.format("=============线程【%s】同步数据结束总计：%s/%s条。====================", threadNo, syncCount, dataCount));
+            //logger.info(String.format("=============线程【%s】同步数据结束总计：%s/%s条。====================", threadNo, syncCount, dataCount));
         }
 
         /**
@@ -142,12 +161,13 @@ public class CountDownLatchTest {
                 }
                 uinfoTmp.put("imgRootPath", imageRootPath);
                 dataCount++;
-                boolean isTrue = neteaseRequestService.syncNeteaseUser(appId, appSecret, uinfoTmp);
+               // boolean isTrue = neteaseRequestService.syncNeteaseUser(appId, appSecret, uinfoTmp);
+                boolean isTrue = true;
                 if(isTrue) {
                     syncCount++;
-                    logger.info(String.format("线程【%s】同步数据第%s/%s条，用户Id：%s。", threadNo, syncCount, dataCount, userId));
+                   // logger.info(String.format("线程【%s】同步数据第%s/%s条，用户Id：%s。", threadNo, syncCount, dataCount, userId));
                 } else {
-                    logger.info(String.format("线程【%s】同步数据失败，用户Id：%s。", threadNo, userId));
+                    //logger.info(String.format("线程【%s】同步数据失败，用户Id：%s。", threadNo, userId));
                 }
             }
         }
